@@ -60,7 +60,227 @@ numbro.registerLanguage({
 
 numbro.setLanguage("en-GB");
 
-const createTable = (title, current, percentage, contribution) => {
+const chartConfig = {
+  container: "#OrganiseChart-simple",
+  subTeeSeparation: 50,
+  siblingSeparation: 50,
+  levelSeparation: 100,
+  connectors: {
+    type: "step",
+    style: {
+      "arrow-end": "classic-wide-long",
+      "stroke-width": 2,
+      stroke: "#898C8F"
+    }
+  }
+};
+
+let nodes,
+  prevWidth,
+  scaleContainer,
+  treeReady = false;
+
+const renderEmptyTree = (container, container2) => {
+  return new Promise(resolve => {
+    const nodes = {};
+
+    const onAfterPositionNode = node => {
+      nodes[node.nodeHTMLid] = node.nodeDOM;
+    };
+
+    const onTreeLoaded = () => {
+      scaleContainer = document.createElement("div");
+
+      scaleContainer.append(...container.childNodes);
+      container.append(scaleContainer);
+
+      scaleTree();
+
+      treeReady = true;
+
+      resolve(nodes);
+    };
+
+    const config = {
+      chart: Object.assign({}, chartConfig, {
+        callback: {
+          onAfterPositionNode,
+          onTreeLoaded
+        }
+      }),
+      nodeStructure: {
+        innerHTML: createTable("all sales", 0, 0, 0),
+        HTMLid: "all-sales",
+        children: [
+          {
+            innerHTML: createTable("sparks sales", 0, 0, 0),
+            HTMLid: "sparks-sales",
+            children: [
+              {
+                innerHTML: createTable("customers", 0, 0, 0),
+                HTMLid: "customers"
+              },
+              {
+                innerHTML: createTable("spend per customer", 0, 0, 0),
+                HTMLid: "spend-per-customer",
+                children: [
+                  {
+                    innerHTML: createTable("baskets per customer", 0, 0, 0),
+                    HTMLid: "baskets-per-customer"
+                  },
+                  {
+                    innerHTML: createTable("spend per basket", 0, 0, 0),
+                    HTMLid: "spend-per-basket",
+                    children: [
+                      {
+                        innerHTML: createTable("units per basket", 0, 0, 0),
+                        HTMLid: "units-per-basket"
+                      },
+                      {
+                        innerHTML: createTable("spend per unit", 0, 0, 0),
+                        HTMLid: "spend-per-unit"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            innerHTML: createTable("non-sparks sales", 0, 0, 0),
+            HTMLid: "non-sparks-sales",
+            children: [
+              {
+                innerHTML: createTable("baskets", 0, 0, 0),
+                HTMLid: "baskets"
+              },
+              {
+                innerHTML: createTable("spend per basket", 0, 0, 0),
+                HTMLid: "non-sparks-spend-per-basket",
+                children: [
+                  {
+                    innerHTML: createTable("units per basket", 0, 0, 0),
+                    HTMLid: "non-sparks-units-per-basket"
+                  },
+                  {
+                    innerHTML: createTable("spend per unit", 0, 0, 0),
+                    HTMLid: "non-sparks-spend-per-unit"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    };
+
+    setTimeout(() => {
+      new Treant(config);
+    }, 100);
+  });
+};
+
+const extractTreeData = data => {
+  return {
+    "all-sales": {
+      label: "All sales",
+      type: "money",
+      current: data[0]["published_kpi.total_sales"].value,
+      growth: data[0]["published_kpi.growth_total_sales"].value,
+      contribution: data[0]["published_kpi.contribution_total_sales"].value
+    },
+    "sparks-sales": {
+      label: "Sparks sales",
+      type: "money",
+      current: data[2]["published_kpi.total_sales"].value,
+      growth: data[2]["published_kpi.growth_total_sales"].value,
+      contribution: data[2]["published_kpi.contribution_total_sales"].value
+    },
+    "non-sparks-sales": {
+      label: "Non-sparks sales",
+      type: "money",
+      current: data[1]["published_kpi.total_sales"].value,
+      growth: data[1]["published_kpi.growth_total_sales"].value,
+      contribution: data[1]["published_kpi.contribution_total_sales"].value
+    },
+    customers: {
+      label: "Customers",
+      type: "quantity",
+      current: data[2]["published_kpi.distinct_customers"].value,
+      growth: data[2]["published_kpi.growth_distinct_customers"].value,
+      contribution:
+        data[2]["published_kpi.contribution_distinct_customers"].value
+    },
+    "spend-per-customer": {
+      label: "Spend per customer",
+      type: "money",
+      current: data[2]["published_kpi.spend_per_customer"].value,
+      growth: data[2]["published_kpi.growth_spend_per_customer"].value,
+      contribution:
+        data[2]["published_kpi.contribution_spend_per_customer"].value
+    },
+    "baskets-per-customer": {
+      label: "Baskets per customer",
+      type: "quantity",
+      current: data[2]["published_kpi.baskets_per_customer"].value,
+      growth: data[2]["published_kpi.growth_baskets_per_customer"].value,
+      contribution:
+        data[2]["published_kpi.contribution_baskets_per_customer"].value
+    },
+    "spend-per-basket": {
+      label: "Spend per basket",
+      type: "money",
+      current: data[2]["published_kpi.spend_per_basket"].value,
+      growth: data[2]["published_kpi.growth_spend_per_basket"].value,
+      contribution: data[2]["published_kpi.contribution_spend_per_basket"].value
+    },
+    "units-per-basket": {
+      label: "Units per basket",
+      type: "quantity",
+      current: data[2]["published_kpi.items_per_basket"].value,
+      growth: data[2]["published_kpi.growth_items_per_basket"].value,
+      contribution: data[2]["published_kpi.contribution_items_per_basket"].value
+    },
+    "spend-per-unit": {
+      label: "Spend per unit",
+      type: "money",
+      current: data[2]["published_kpi.spend_per_item"].value,
+      growth: data[2]["published_kpi.growth_spend_per_item"].value,
+      contribution: data[2]["published_kpi.contribution_spend_per_item"].value
+    },
+    baskets: {
+      label: "Baskets",
+      type: "quantity",
+      current: data[1]["published_kpi.baskets_per_customer"].value,
+      growth: data[1]["published_kpi.growth_baskets_per_customer"].value,
+      contribution:
+        data[1]["published_kpi.contribution_baskets_per_customer"].value
+    },
+    "non-sparks-spend-per-basket": {
+      label: "Spend per basket",
+      type: "money",
+      current: data[1]["published_kpi.spend_per_basket"].value,
+      growth: data[1]["published_kpi.growth_spend_per_basket"].value,
+      contribution: data[1]["published_kpi.contribution_spend_per_basket"].value
+    },
+    "non-sparks-units-per-basket": {
+      label: "Units per basket",
+      type: "quantity",
+      current: data[1]["published_kpi.items_per_basket"].value,
+      growth: data[1]["published_kpi.growth_items_per_basket"].value,
+      contribution: data[1]["published_kpi.contribution_items_per_basket"].value
+    },
+    "non-sparks-spend-per-unit": {
+      label: "Spend per unit",
+      type: "money",
+      current: data[1]["published_kpi.spend_per_item"].value,
+      growth: data[1]["published_kpi.growth_spend_per_item"].value,
+      contribution: data[1]["published_kpi.contribution_spend_per_item"].value
+    }
+  };
+};
+
+const createTable = (title, current, percentage, contribution, type) => {
   const positive = contribution > 0;
   const negative = contribution < 0;
 
@@ -72,7 +292,14 @@ const createTable = (title, current, percentage, contribution) => {
     </tr>
     <tr>
       <td>Current</td>
-      <td class="value">${numbro(current).formatCurrency()}</td>
+      <td class="value">${
+        type === "money"
+          ? numbro(current).formatCurrency()
+          : numbro(current).format({
+              average: true,
+              mantissa: 1
+            })
+      }</td>
     </tr>
     <tr class="percentage">
       <td>%</td>
@@ -85,13 +312,25 @@ const createTable = (title, current, percentage, contribution) => {
   </table>`;
 };
 
+const scaleTree = () => {
+  const parentWidth = scaleContainer.parentNode.getBoundingClientRect().width;
+  const contentWidth = parseInt(
+    scaleContainer.childNodes[0].getAttribute("width"),
+    10
+  );
+  const scale = parentWidth / contentWidth;
+  scaleContainer.style.transform = `scale(${scale})`;
+  scaleContainer.style.transformOrigin = "left top";
+  scaleContainer.style.position = "relative";
+};
+
 looker.plugins.visualizations.add({
-  create: function(element, config) {
+  create: function(element) {
     element.innerHTML = `
     <style>
     @import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap');
 
-    .Treant { position: relative; overflow: hidden; padding: 0 !important; }
+    .Treant { position: relative; padding: 0 !important; }
     .Treant .node,
     .Treant .pseudo { position: absolute; display: block; visibility: hidden; 
       background-color: #FFFFFF; }
@@ -147,97 +386,44 @@ looker.plugins.visualizations.add({
     </style>
   `;
 
-    const chartConfig = {
-      chart: {
-        container: "#OrganiseChart-simple",
-        subTeeSeparation: 50,
-        siblingSeparation: 50,
-        levelSeparation: 100,
-        connectors: {
-          type: "step",
-          style: {
-            "arrow-end": "classic-wide-long",
-            "stroke-width": 2,
-            stroke: "#898C8F"
-          }
-        }
-      },
-      nodeStructure: {
-        innerHTML: createTable("all sales", 181, 90, 20),
-        children: [
-          {
-            innerHTML: createTable("sparks sales", 181, 90, 20),
-            children: [
-              {
-                innerHTML: createTable("customers", 1810000, 90, 20)
-              },
-              {
-                innerHTML: createTable("spend per customer", 181, 90, 20),
-                children: [
-                  {
-                    innerHTML: createTable("baskets per customer", 181, 90, 20)
-                  },
-                  {
-                    innerHTML: createTable("spend per basket", -181, 90, 20),
-                    children: [
-                      {
-                        innerHTML: createTable("units per basket", 181, 90, 20)
-                      },
-                      {
-                        innerHTML: createTable("spend per unit", 181, 90, 20)
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            innerHTML: createTable("non-sparks sales", 181, 90, 20),
-            children: [
-              {
-                innerHTML: createTable("baskets", 181, 90, 20)
-              },
-              {
-                innerHTML: createTable("spend per basket", 181, 90, -20),
-                children: [
-                  {
-                    innerHTML: createTable("units per basket", 181, 90, 20)
-                  },
-                  {
-                    innerHTML: createTable("spend per unit", 181, 90, -20)
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    };
-
     const container = element.appendChild(document.createElement("div"));
     container.id = "OrganiseChart-simple";
 
-    setTimeout(() => {
-      new Treant(chartConfig);
+    renderEmptyTree(container, element).then(newNodes => {
+      nodes = newNodes;
 
-      const scaleContainer = document.createElement("div");
-
-      const parentWidth = container.getBoundingClientRect().width;
-      const contentWidth = container.childNodes[0].getBoundingClientRect()
-        .width;
-
-      scaleContainer.append(...container.childNodes);
-      container.append(scaleContainer);
-
-      const scale = parentWidth / contentWidth;
-
-      scaleContainer.style.transform = `scale(${scale})`;
-      scaleContainer.style.transformOrigin = "left top";
-      scaleContainer.style.position = "relative";
-    }, 1000);
+      this.trigger("filter", [
+        {
+          field: "none",
+          value: "none",
+          run: true
+        }
+      ]);
+    });
   },
-  updateAsync: function(data, element, config, queryResponse, details, done) {
-    console.log(data, element, config, queryResponse, details, done);
+  updateAsync: function(data, element, _config, queryResponse, details, done) {
+    if (treeReady === false) {
+      return;
+    }
+
+    const newWidth = element.getBoundingClientRect().width;
+
+    if (newWidth !== prevWidth) {
+      prevWidth = newWidth;
+
+      scaleTree();
+    }
+
+    const treeData = extractTreeData(data);
+
+    Object.entries(treeData).forEach(([id, values]) => {
+      nodes[id].innerHTML = createTable(
+        values.label,
+        values.current,
+        values.growth,
+        values.contribution,
+        values.type
+      );
+    });
   }
 });
