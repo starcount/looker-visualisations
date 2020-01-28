@@ -65,6 +65,7 @@ const chartConfig = {
   subTeeSeparation: 50,
   siblingSeparation: 50,
   levelSeparation: 100,
+  padding: 40,
   connectors: {
     type: "step",
     style: {
@@ -80,9 +81,20 @@ let nodes,
   scaleContainer,
   treeReady = false;
 
-const renderEmptyTree = (container, container2) => {
+const renderEmptyTree = container => {
   return new Promise(resolve => {
     const nodes = {};
+
+    const { width } = container.getBoundingClientRect();
+
+    if (width === 0) {
+      return new Promise(resolve => {
+        // Graph is sometimes drawn too early when proper layout is not yet rendered. It causes incorrect sizes.
+        // We need to wait until page layout is ready.
+
+        setTimeout(() => renderEmptyTree(container).then(resolve), 100);
+      });
+    }
 
     const onAfterPositionNode = node => {
       nodes[node.nodeHTMLid] = node.nodeDOM;
@@ -280,9 +292,21 @@ const extractTreeData = data => {
   };
 };
 
-const createTable = (title, current, percentage, contribution, type) => {
+const createTable = (
+  title,
+  current,
+  percentage,
+  contribution,
+  type,
+  parent
+) => {
   const positive = contribution > 0;
   const negative = contribution < 0;
+
+  if (parent) {
+    parent.classList.toggle("result-positive", positive);
+    parent.classList.toggle("result-negative", negative);
+  }
 
   return `<table width="200" class="${positive ? "result-positive" : ""} ${
     negative ? "result-negative" : ""
@@ -303,7 +327,11 @@ const createTable = (title, current, percentage, contribution, type) => {
     </tr>
     <tr class="percentage">
       <td>%</td>
-      <td class="value">${percentage}</td>
+      <td class="value">${numbro(percentage / 100).format({
+        output: "percent",
+        mantissa: 2,
+        spaceSeparated: true
+      })}</td>
     </tr>
     <tr class="contribution">
       <td>Contribution</td>
@@ -320,6 +348,7 @@ const scaleTree = () => {
   );
   const scale = parentWidth / contentWidth;
   scaleContainer.style.transform = `scale(${scale})`;
+  scaleContainer.style.maxHeight = 0;
   scaleContainer.style.transformOrigin = "left top";
   scaleContainer.style.position = "relative";
 };
@@ -330,7 +359,15 @@ looker.plugins.visualizations.add({
     <style>
     @import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap');
 
-    .Treant { position: relative; padding: 0 !important; }
+    #vis {
+      opacity: 0;
+    }
+
+    #vis.visible {
+      opacity: 1;
+    }
+
+    .Treant { position: relative; padding: 0 !important; border: 2px solid #898C8F; border-radius: 10px; }
     .Treant .node,
     .Treant .pseudo { position: absolute; display: block; visibility: hidden; 
       background-color: #FFFFFF; }
@@ -340,19 +377,38 @@ looker.plugins.visualizations.add({
     .Treant .collapse-switch { width: 3px; height: 3px; display: block; border: 1px solid black; position: absolute; top: 1px; right: 1px; cursor: pointer; }
     .Treant .collapsed .collapse-switch { background-color: #868DEE; }
       #OrganiseChart-simple { height: 100%; width: 100%; margin: 5px; margin: 5px auto; }
-      .node { color: #9CB5ED; border: 1px solid #898C8F; border-radius: 6px; width: 240px; transition: box-shadow 0.2s linear; }
+      .node { color: #9CB5ED; width: 240px; border: 2px solid #898C8F; transition: box-shadow 0.2s linear; border-radius: 6px; }
       .node p { font-size: 20px; line-height: 20px; height: 20px; font-weight: bold; padding: 3px; margin: 0; }
+
+      .node.result-positive {
+        border: 2px solid #6d8a46;
+      }
+
+      .node.result-negative {
+        border: 2px solid #db7d78ff;
+      }
 
       .node:hover {
         box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.75);
       }
 
-      .result-positive .percentage .value, .result-positive .contribution .value, .result-positive th {
-        color: #2ECC40;
+      .result-positive .percentage .value, .result-positive .contribution .value {
+        color: #6d8a46;
       }
       
-      .result-negative .percentage .value, .result-negative .contribution .value, .result-negative th {
-        color: #FF4136;
+      .result-negative .percentage .value, .result-negative .contribution .value {
+        color: #db7d78ff;
+      }
+
+
+      .result-positive th {
+        color: #FFF;
+        background-color: #6d8a46;
+      }
+
+      .result-negative th {
+        color: #FFF;
+        background-color: #db7d78ff;
       }
 
       th {
@@ -389,7 +445,7 @@ looker.plugins.visualizations.add({
     const container = element.appendChild(document.createElement("div"));
     container.id = "OrganiseChart-simple";
 
-    renderEmptyTree(container, element).then(newNodes => {
+    renderEmptyTree(container).then(newNodes => {
       nodes = newNodes;
 
       this.trigger("filter", [
@@ -406,7 +462,9 @@ looker.plugins.visualizations.add({
       return;
     }
 
-    const newWidth = element.getBoundingClientRect().width;
+    element.classList.toggle("visible", true);
+
+    const newWidth = element.getBoundingClientRect();
 
     if (newWidth !== prevWidth) {
       prevWidth = newWidth;
@@ -422,7 +480,8 @@ looker.plugins.visualizations.add({
         values.current,
         values.growth,
         values.contribution,
-        values.type
+        values.type,
+        nodes[id]
       );
     });
   }

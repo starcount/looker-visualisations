@@ -1,0 +1,24 @@
+@import "//cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/Treant.css";
+
+#OrganiseChart-simple {
+  height: 400px;
+  width: 800px;
+  margin: 5px;
+  margin: 5px auto;
+  border: 3px solid #ddd;
+  border-radius: 3px;
+  padding: 10px;
+}
+.node {
+  color: #9cb5ed;
+  border: 2px solid #c8c8c8;
+  border-radius: 3px;
+}
+.node p {
+  font-size: 20px;
+  line-height: 20px;
+  height: 20px;
+  font-weight: bold;
+  padding: 3px;
+  margin: 0;
+}

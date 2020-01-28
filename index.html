@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width">
+  <title> Chart emulation </title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/Treant.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/Treant.min.js">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<div id="container">
+  </div>
+  
+	<script>
+    const element = document.getElementById("container");
+
+      var config = {
+      container: "#OrganiseChart-simple"
+    };
+
+    var parent_node = {
+      text: { name: "Parent node" }
+    };
+
+    var first_child = {
+      parent: parent_node,
+      text: { name: "First child" }
+    };
+
+    var second_child = {
+      parent: parent_node,
+      text: { name: "Second child" }
+    };
+
+    var simple_chart_config = [config, parent_node, first_child, second_child];
+    const container = element.appendChild(document.createElement("div"));
+    container.id = "OrganiseChart-simple";
+
+    setTimeout(() => {
+
+new Treant(simple_chart_config);
+}, 1000)
+	</script>
+
+</body>
+</html>
