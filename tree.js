@@ -192,102 +192,338 @@ const renderEmptyTree = container => {
   });
 };
 
+const get = (object, path, defaultValue) => {
+  let node = object;
+  let stepsLeft = path.concat();
+  let step;
+
+  while (node !== undefined && stepsLeft.length > 0) {
+    step = stepsLeft.shift();
+    node = node[step];
+  }
+
+  return node === undefined ? defaultValue : node;
+};
+
 const extractTreeData = data => {
+  const allIndex = data.findIndex(row => {
+    const loyaltyFlag = row["published_kpi.loyalty_flag"];
+    const segmentValueName = row["published_kpi.segment_value_name"];
+
+    return (
+      loyaltyFlag.value.toLowerCase() === "all" &&
+      segmentValueName.value.toLowerCase() === "all"
+    );
+  });
+
+  let leftBranchIndex = data.findIndex(row => {
+    const loyaltyFlag = row["published_kpi.loyalty_flag"];
+    const segmentValueName = row["published_kpi.segment_value_name"];
+
+    return (
+      loyaltyFlag.value === "1" &&
+      segmentValueName.value.toLowerCase() === "all"
+    );
+  });
+
+  if (leftBranchIndex === -1) {
+    leftBranchIndex = data.findIndex(row => {
+      const loyaltyFlag = row["published_kpi.loyalty_flag"];
+
+      return loyaltyFlag.value === "1";
+    });
+  }
+
+  const rightBranchIndex = data.findIndex(row => {
+    const loyaltyFlag = row["published_kpi.loyalty_flag"];
+
+    return loyaltyFlag.value === "0";
+  });
+
   return {
     "all-sales": {
       label: "All sales",
       type: "money",
-      current: data[0]["published_kpi.total_sales"].value,
-      growth: data[0]["published_kpi.growth_total_sales"].value,
-      contribution: data[0]["published_kpi.contribution_total_sales"].value
+      current: get(data, [allIndex, "published_kpi.total_sales", "value"], 0),
+      growth: get(
+        data,
+        [allIndex, "published_kpi.growth_total_sales", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [allIndex, "published_kpi.contribution_total_sales", "value"],
+        0
+      )
     },
     "sparks-sales": {
       label: "Sparks sales",
       type: "money",
-      current: data[2]["published_kpi.total_sales"].value,
-      growth: data[2]["published_kpi.growth_total_sales"].value,
-      contribution: data[2]["published_kpi.contribution_total_sales"].value
+      current: get(
+        data,
+        [leftBranchIndex, "published_kpi.total_sales", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [leftBranchIndex, "published_kpi.growth_total_sales", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [leftBranchIndex, "published_kpi.contribution_total_sales", "value"],
+        0
+      )
     },
     "non-sparks-sales": {
       label: "Non-sparks sales",
       type: "money",
-      current: data[1]["published_kpi.total_sales"].value,
-      growth: data[1]["published_kpi.growth_total_sales"].value,
-      contribution: data[1]["published_kpi.contribution_total_sales"].value
+
+      current: get(
+        data,
+        [rightBranchIndex, "published_kpi.total_sales", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [rightBranchIndex, "published_kpi.growth_total_sales", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [rightBranchIndex, "published_kpi.contribution_total_sales", "value"],
+        0
+      )
     },
     customers: {
       label: "Customers",
       type: "quantity",
-      current: data[2]["published_kpi.distinct_customers"].value,
-      growth: data[2]["published_kpi.growth_distinct_customers"].value,
-      contribution:
-        data[2]["published_kpi.contribution_distinct_customers"].value
+      current: get(
+        data,
+        [leftBranchIndex, "published_kpi.distinct_customers", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [leftBranchIndex, "published_kpi.growth_distinct_customers", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          leftBranchIndex,
+          "published_kpi.contribution_distinct_customers",
+          "value"
+        ],
+        0
+      )
     },
     "spend-per-customer": {
       label: "Spend per customer",
       type: "money",
-      current: data[2]["published_kpi.spend_per_customer"].value,
-      growth: data[2]["published_kpi.growth_spend_per_customer"].value,
-      contribution:
-        data[2]["published_kpi.contribution_spend_per_customer"].value
+      current: get(
+        data,
+        [leftBranchIndex, "published_kpi.spend_per_customer", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [leftBranchIndex, "published_kpi.growth_spend_per_customer", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          leftBranchIndex,
+          "published_kpi.contribution_spend_per_customer",
+          "value"
+        ],
+        0
+      )
     },
     "baskets-per-customer": {
       label: "Baskets per customer",
       type: "quantity",
-      current: data[2]["published_kpi.baskets_per_customer"].value,
-      growth: data[2]["published_kpi.growth_baskets_per_customer"].value,
-      contribution:
-        data[2]["published_kpi.contribution_baskets_per_customer"].value
+      current: get(
+        data,
+        [leftBranchIndex, "published_kpi.baskets_per_customer", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [leftBranchIndex, "published_kpi.growth_baskets_per_customer", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          leftBranchIndex,
+          "published_kpi.contribution_baskets_per_customer",
+          "value"
+        ],
+        0
+      )
     },
     "spend-per-basket": {
       label: "Spend per basket",
       type: "money",
-      current: data[2]["published_kpi.spend_per_basket"].value,
-      growth: data[2]["published_kpi.growth_spend_per_basket"].value,
-      contribution: data[2]["published_kpi.contribution_spend_per_basket"].value
+      current: get(
+        data,
+        [leftBranchIndex, "published_kpi.spend_per_basket", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [leftBranchIndex, "published_kpi.growth_spend_per_basket", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          leftBranchIndex,
+          "published_kpi.contribution_spend_per_basket",
+          "value"
+        ],
+        0
+      )
     },
     "units-per-basket": {
       label: "Units per basket",
       type: "quantity",
-      current: data[2]["published_kpi.items_per_basket"].value,
-      growth: data[2]["published_kpi.growth_items_per_basket"].value,
-      contribution: data[2]["published_kpi.contribution_items_per_basket"].value
+      current: get(
+        data,
+        [leftBranchIndex, "published_kpi.items_per_basket", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [leftBranchIndex, "published_kpi.growth_items_per_basket", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          leftBranchIndex,
+          "published_kpi.contribution_items_per_basket",
+          "value"
+        ],
+        0
+      )
     },
     "spend-per-unit": {
       label: "Spend per unit",
       type: "money",
-      current: data[2]["published_kpi.spend_per_item"].value,
-      growth: data[2]["published_kpi.growth_spend_per_item"].value,
-      contribution: data[2]["published_kpi.contribution_spend_per_item"].value
+      current: get(
+        data,
+        [leftBranchIndex, "published_kpi.spend_per_item", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [leftBranchIndex, "published_kpi.growth_spend_per_item", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [leftBranchIndex, "published_kpi.contribution_spend_per_item", "value"],
+        0
+      )
     },
     baskets: {
       label: "Baskets",
       type: "quantity",
-      current: data[1]["published_kpi.baskets_per_customer"].value,
-      growth: data[1]["published_kpi.growth_baskets_per_customer"].value,
-      contribution:
-        data[1]["published_kpi.contribution_baskets_per_customer"].value
+      current: get(
+        data,
+        [rightBranchIndex, "published_kpi.baskets_per_customer", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [
+          rightBranchIndex,
+          "published_kpi.growth_baskets_per_customer",
+          "value"
+        ],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          rightBranchIndex,
+          "published_kpi.contribution_baskets_per_customer",
+          "value"
+        ],
+        0
+      )
     },
     "non-sparks-spend-per-basket": {
       label: "Spend per basket",
       type: "money",
-      current: data[1]["published_kpi.spend_per_basket"].value,
-      growth: data[1]["published_kpi.growth_spend_per_basket"].value,
-      contribution: data[1]["published_kpi.contribution_spend_per_basket"].value
+      current: get(
+        data,
+        [rightBranchIndex, "published_kpi.spend_per_basket", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [rightBranchIndex, "published_kpi.growth_spend_per_basket", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          rightBranchIndex,
+          "published_kpi.contribution_spend_per_basket",
+          "value"
+        ],
+        0
+      )
     },
     "non-sparks-units-per-basket": {
       label: "Units per basket",
       type: "quantity",
-      current: data[1]["published_kpi.items_per_basket"].value,
-      growth: data[1]["published_kpi.growth_items_per_basket"].value,
-      contribution: data[1]["published_kpi.contribution_items_per_basket"].value
+      current: get(
+        data,
+        [rightBranchIndex, "published_kpi.items_per_basket", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [rightBranchIndex, "published_kpi.growth_items_per_basket", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          rightBranchIndex,
+          "published_kpi.contribution_items_per_basket",
+          "value"
+        ],
+        0
+      )
     },
     "non-sparks-spend-per-unit": {
       label: "Spend per unit",
       type: "money",
-      current: data[1]["published_kpi.spend_per_item"].value,
-      growth: data[1]["published_kpi.growth_spend_per_item"].value,
-      contribution: data[1]["published_kpi.contribution_spend_per_item"].value
+      current: get(
+        data,
+        [rightBranchIndex, "published_kpi.spend_per_item", "value"],
+        0
+      ),
+      growth: get(
+        data,
+        [rightBranchIndex, "published_kpi.growth_spend_per_item", "value"],
+        0
+      ),
+      contribution: get(
+        data,
+        [
+          rightBranchIndex,
+          "published_kpi.contribution_spend_per_item",
+          "value"
+        ],
+        0
+      )
     }
   };
 };
@@ -318,7 +554,11 @@ const createTable = (
       <td>Current</td>
       <td class="value">${
         type === "money"
-          ? numbro(current).formatCurrency()
+          ? numbro(current).formatCurrency({
+              mantissa: 2,
+              average: true,
+              optionalMantissa: true
+            })
           : numbro(current).format({
               average: true,
               mantissa: 1
@@ -335,7 +575,11 @@ const createTable = (
     </tr>
     <tr class="contribution">
       <td>Contribution</td>
-      <td class="value">${numbro(contribution).formatCurrency()}</td>
+      <td class="value">${numbro(contribution).formatCurrency({
+        mantissa: 2,
+        average: true,
+        optionalMantissa: true
+      })}</td>
     </tr>
   </table>`;
 };
@@ -459,6 +703,7 @@ looker.plugins.visualizations.add({
   },
   updateAsync: function(data, element, _config, queryResponse, details, done) {
     if (treeReady === false) {
+      done();
       return;
     }
 
@@ -484,5 +729,7 @@ looker.plugins.visualizations.add({
         nodes[id]
       );
     });
+
+    done();
   }
 });
