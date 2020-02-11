@@ -205,7 +205,7 @@ const get = (object, path, defaultValue) => {
   return node === undefined ? defaultValue : node;
 };
 
-const extractTreeData = data => {
+const extractTreeData = (data, config = {}) => {
   const allIndex = data.findIndex(row => {
     const loyaltyFlag = row["published_kpi.loyalty_flag"];
     const segmentValueName = row["published_kpi.segment_value_name"];
@@ -257,7 +257,7 @@ const extractTreeData = data => {
       )
     },
     "sparks-sales": {
-      label: "Sparks sales",
+      label: config.harrods ? "Rewards" : "Sparks sales",
       type: "money",
       current: get(
         data,
@@ -276,7 +276,7 @@ const extractTreeData = data => {
       )
     },
     "non-sparks-sales": {
-      label: "Non-sparks sales",
+      label: config.harrods ? "Non-rewards" : "Non-sparks sales",
       type: "money",
 
       current: get(
@@ -598,7 +598,14 @@ const scaleTree = () => {
 };
 
 looker.plugins.visualizations.add({
-  create: function(element) {
+  options: {
+    harrods: {
+      type: "boolean",
+      label: "Harrods labels",
+      default: false
+    }
+  },
+  create: function(element, config) {
     element.innerHTML = `
     <style>
     @import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap');
@@ -701,7 +708,7 @@ looker.plugins.visualizations.add({
       ]);
     });
   },
-  updateAsync: function(data, element, _config, queryResponse, details, done) {
+  updateAsync: function(data, element, config, queryResponse, details, done) {
     if (treeReady === false) {
       done();
       return;
@@ -717,7 +724,7 @@ looker.plugins.visualizations.add({
       scaleTree();
     }
 
-    const treeData = extractTreeData(data);
+    const treeData = extractTreeData(data, config);
 
     Object.entries(treeData).forEach(([id, values]) => {
       nodes[id].innerHTML = createTable(
